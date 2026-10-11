@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>دفترچه هوشمند</title>
+
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#6366f1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="دفترچه">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" type="image/png" href="./icon-192.png">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Vazirmatn', Tahoma, sans-serif;
+    background: #0f172a; color: #e2e8f0;
+    min-height: 100vh; padding: 12px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  body.standalone-mode {
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+  header {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    padding: 16px; border-radius: 16px; text-align: center;
+    margin-bottom: 16px; box-shadow: 0 8px 24px rgba(99,102,241,0.3);
+  }
+  header h1 { font-size: 1.3rem; color: #fff; }
+  header .status {
+    font-size: 0.75rem; margin-top: 6px; opacity: 0.9;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; display: inline-block; }
+  .dot.online { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+  .dot.offline { background: #ef4444; }
+  .dot.checking { background: #f59e0b; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: 0.4; } }
+
+  .card {
+    background: #1e293b; border-radius: 14px; padding: 14px;
+    margin-bottom: 12px; border: 1px solid #334155;
+  }
+
+  .tabs {
+    display: flex; gap: 6px; background: #0f172a; padding: 4px;
+    border-radius: 10px; margin-bottom: 12px;
+  }
+  .tabs button {
+    flex: 1; padding: 10px; border: none; background: transparent;
+    color: #94a3b8; border-radius: 8px; font-family: inherit;
+    font-size: 0.85rem; cursor: pointer; transition: 0.2s;
+  }
+  .tabs button.active { background: #6366f1; color: #fff; font-weight: 600; }
+
+  textarea, input[type="text"], input[type="number"], select {
+    width: 100%; padding: 12px; border: 1.5px solid #334155;
+    border-radius: 10px; background: #0f172a; color: #e2e8f0;
+    font-family: inherit; font-size: 0.9rem; outline: none;
+    resize: vertical; transition: 0.2s;
+  }
+  textarea:focus, input:focus, select:focus { border-color: #6366f1; }
+  select { cursor: pointer; }
+
+  .btn {
+    padding: 12px 16px; border: none; border-radius: 10px;
+    font-family: inherit; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; transition: 0.2s; display: inline-flex;
+    align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-primary { background: #6366f1; color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #4f46e5; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-ai { background: #8b5cf6; color: #fff; }
+  .btn-ai:hover:not(:disabled) { background: #7c3aed; }
+  .btn-ai:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-sm { padding: 8px 12px; font-size: 0.8rem; }
+  .btn-danger { background: #ef4444; color: #fff; }
+  .btn-block { width: 100%; }
+  .btn-outline {
+    background: transparent; border: 1.5px solid #475569; color: #cbd5e1;
+  }
+  .btn-outline:hover:not(:disabled) { border-color: #6366f1; color: #fff; }
+
+  .row { display: flex; gap: 8px; margin-top: 8px; }
+  .row input { flex: 1; }
+
+  .search-box {
+    display: flex; align-items: center; gap: 8px;
+    background: #1e293b; border: 1.5px solid #334155;
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 12px;
+  }
+  .search-box input { border: none; background: transparent; flex: 1; padding: 0; }
+
+  .note {
+    background: #1e293b; border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 8px; border-right: 4px solid #8b5cf6;
+    transition: all 0.2s; cursor: pointer; position: relative;
+  }
+  .note.type-text { border-right-color: #6366f1; }
+  .note.type-image { border-right-color: #f59e0b; }
+  .note.type-link { border-right-color: #10b981; }
+  .note:hover { background: #243347; }
+
+  .note-header {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .note-title {
+    font-size: 0.95rem; color: #f1f5f9; font-weight: 600;
+    flex: 1; word-break: break-word; line-height: 1.5;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .note-title .type-icon { font-size: 0.9rem; flex-shrink: 0; }
+
+  .note-actions { display: flex; gap: 4px; align-items: center; }
+  .expand-icon { color: #64748b; transition: transform 0.2s; font-size: 0.9rem; }
+  .note.open .expand-icon { transform: rotate(180deg); }
+
+  .note .meta {
+    font-size: 0.72rem; color: #64748b; margin-top: 6px;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  }
+  .note .meta .date-part, .note .meta .time-part {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #0f172a; padding: 3px 8px; border-radius: 6px;
+  }
+  .note .meta .date-part { color: #94a3b8; }
+  .note .meta .time-part { color: #cbd5e1; font-weight: 500; }
+  .note .meta a {
+    color: #818cf8; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+
+  .note-preview {
+    margin-top: 8px; font-size: 0.83rem; color: #cbd5e1;
+    line-height: 1.7; word-break: break-word; overflow: hidden;
+  }
+  .note-preview.clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+  .note-preview.clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .note-preview.clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+  .note-preview.clamp-5 { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; }
+
+  .note-full {
+    margin-top: 10px; font-size: 0.85rem; color: #cbd5e1;
+    line-height: 1.75; white-space: pre-wrap; word-break: break-word;
+    display: none; padding-top: 10px; border-top: 1px dashed #334155;
+  }
+  .note.open .note-full { display: block; }
+  .note.open .note-preview { display: none; }
+
+  .note-image {
+    margin-top: 10px; max-width: 100%; max-height: 300px;
+    border-radius: 10px; display: block;
+    border: 1px solid #334155;
+  }
+  .note.open .note-image { max-height: 500px; }
+
+  .note .tags { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    background: #312e81; color: #c7d2fe; font-size: 0.7rem;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  mark { background: #fbbf24; color: #78350f; padding: 0 3px; border-radius: 3px; }
+
+  .empty {
+    text-align: center; padding: 40px 20px; color: #64748b;
+    background: #1e293b; border-radius: 12px;
+  }
+
+  .preview { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 8px; }
+
+  .loading {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid #fff; border-top-color: transparent;
+    border-radius: 50%; animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #1e293b; color: #fff; padding: 12px 20px;
+    border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    z-index: 999; font-size: 0.85rem; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none;
+    max-width: 90%; text-align: center;
+  }
+  .toast.show { opacity: 1; }
+
+  .settings-group {
+    border-top: 1px solid #334155; padding-top: 12px; margin-top: 12px;
+  }
+  .settings-group:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+  .settings-title {
+    font-size: 0.8rem; color: #8b5cf6; font-weight: 600; margin-bottom: 10px;
+  }
+  .settings-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .settings-row label { font-size: 0.8rem; color: #94a3b8; min-width: 100px; }
+  .settings-row input, .settings-row select { font-size: 0.8rem; padding: 8px; }
+  .settings-row input[type="checkbox"] { width: auto; cursor: pointer; }
+
+  .date-group {
+    font-size: 0.78rem; color: #8b5cf6; font-weight: 600;
+    margin: 16px 4px 8px; padding-bottom: 6px;
+    border-bottom: 1px solid #334155;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .offline-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #7f1d1d; color: #fecaca;
+    font-size: 0.65rem; padding: 3px 8px; border-radius: 20px;
+    margin-right: 6px;
+  }
+
+  .help-text {
+    font-size: 0.72rem; color: #64748b; margin-top: 4px;
+    line-height: 1.6;
+  }
+
+  .divider {
+    display: flex; align-items: center; gap: 8px;
+    margin: 12px 0 8px; color: #475569; font-size: 0.7rem;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: #334155;
+  }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #1e293b; border-radius: 16px; padding: 20px;
+    max-width: 400px; width: 100%;
+    border: 1px solid #334155;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal h3 {
+    font-size: 1rem; color: #f1f5f9; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .modal p {
+    font-size: 0.85rem; color: #cbd5e1; line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .modal-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .modal-actions .btn { min-width: 80px; }
+  .btn-cancel { background: #475569; color: #e2e8f0; }
+  .btn-cancel:hover { background: #64748b; }
+  .btn-confirm { background: #6366f1; color: #fff; }
+  .btn-confirm:hover { background: #4f46e5; }
+
+  .expiry-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #78350f; color: #fed7aa;
+    font-size: 0.65rem; padding: 3px 8px; border-radius: 20px;
+  }
+  .expiry-badge.expired {
+    background: #7f1d1d; color: #fecaca;
+  }
+</style>
+</head>
+<body>
+
+<!-- بنر نصب PWA -->
+<div id="installBanner" style="
+  display: none;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.4);
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+">
+  <div style="font-size:0.85rem; line-height:1.5;">
+    <strong>📱 نصب روی گوشی</strong><br>
+    <span style="opacity:0.85; font-size:0.75rem;">برای تجربه بهتر و کار آفلاین</span>
+  </div>
+  <div style="display:flex; gap:6px;">
+    <button onclick="installPWA()" style="
+      background:#fff; color:#6366f1; border:none;
+      padding:8px 14px; border-radius:8px;
+      font-family:inherit; font-weight:600; font-size:0.8rem;
+      cursor:pointer;
+    ">نصب</button>
+    <button onclick="dismissInstall()" style="
+      background:rgba(255,255,255,0.2); color:#fff; border:none;
+      padding:8px 10px; border-radius:8px;
+      font-family:inherit; font-size:0.8rem; cursor:pointer;
+    ">✕</button>
+  </div>
+</div>
+
+<header>
+  <h1>📝 دفترچه هوشمند</h1>
+  <div class="status">
+    <span class="dot checking" id="statusDot"></span>
+    <span id="statusText">در حال بررسی...</span>
+  </div>
+</header>
+
+<!-- تنظیمات -->
+<div class="card" id="settingsCard" style="display:none;">
+  
+  <div class="settings-group">
+    <div class="settings-title">🔌 اتصال به هوش مصنوعی (اختیاری)</div>
+    <div class="settings-row">
+      <label>آدرس AI:</label>
+      <input type="text" id="serverUrl" value="http://127.0.0.1:8080">
+      <button class="btn btn-primary btn-sm" onclick="saveServer()">ذخیره</button>
+    </div>
+    <div class="settings-row">
+      <label>مدل:</label>
+      <input type="text" id="modelName" value="qwen">
+      <button class="btn btn-primary btn-sm" onclick="saveModel()">ذخیره</button>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-title">✍️ متن‌های پیش‌فرض</div>
+    <div class="settings-row">
+      <label>متن خالی عکس:</label>
+      <input type="text" id="defaultImageText" value="بدون توضیحات">
+      <button class="btn btn-primary btn-sm" onclick="saveDefaultTexts()">ذخیره</button>
+    </div>
+    <div class="settings-row">
+      <label>عنوان عکس:</label>
+      <input type="text" id="defaultImageTitle" value="یادداشت تصویری">
+    </div>
+    <div class="settings-row">
+      <label>عنوان متن:</label>
+      <input type="text" id="defaultTextTitle" value="یادداشت بدون عنوان">
+    </div>
+    <div class="settings-row">
+      <label>عنوان لینک:</label>
+      <input type="text" id="defaultLinkTitle" value="لینک ذخیره‌شده">
+      <button class="btn btn-primary btn-sm" onclick="saveDefaultTexts()">ذخیره همه</button>
+    </div>
+    <div class="settings-row">
+      <label>تأیید بدون متن:</label>
+      <input type="checkbox" id="confirmEmpty" onchange="saveDisplaySettings()">
+      <span style="font-size:0.75rem;color:#64748b;">قبل از ذخیره بدون متن بپرس</span>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-title">🗑️ حذف خودکار (اختیاری)</div>
+    <div class="settings-row">
+      <label>فعال‌سازی:</label>
+      <input type="checkbox" id="autoDelete" onchange="saveAutoDelete()">
+      <span style="font-size:0.75rem;color:#64748b;">حذف خودکار یادداشت‌های قدیمی</span>
+    </div>
+    <div class="settings-row">
+      <label>مدت نگهداری:</label>
+      <input type="number" id="keepDays" value="30" min="1" max="3650" 
+             style="width:80px;" onchange="saveAutoDelete()">
+      <span style="font-size:0.75rem;color:#64748b;">روز</span>
+    </div>
+    <div class="settings-row">
+      <label>فقط دستی‌ها:</label>
+      <input type="checkbox" id="autoDeleteManualOnly" onchange="saveAutoDelete()">
+      <span style="font-size:0.75rem;color:#64748b;">فقط یادداشت‌های بدون AI</span>
+    </div>
+    <div class="help-text">
+      💡 اگه فعال باشه، هر بار که برنامه باز می‌شه یادداشت‌های قدیمی‌تر از مدت تعیین‌شده پاک می‌شن.
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <div class="settings-title">👁️ نمایش یادداشت‌ها</div>
+    
+    <div class="settings-row">
+      <label>نمایش متن:</label>
+      <input type="checkbox" id="showContent" onchange="saveDisplaySettings()">
+      <span style="font-size:0.75rem;color:#64748b;">پیش‌نمایش متن</span>
+    </div>
+
+    <div class="settings-row">
+      <label>تعداد خط:</label>
+      <select id="lineLimit" onchange="saveDisplaySettings()">
+        <option value="1">۱ خط</option>
+        <option value="2">۲ خط</option>
+        <option value="3">۳ خط</option>
+        <option value="5">۵ خط</option>
+        <option value="full">کامل</option>
+      </select>
+    </div>
+
+    <div class="settings-row">
+      <label>حالت پیش‌فرض:</label>
+      <select id="defaultOpen" onchange="saveDisplaySettings()">
+        <option value="closed">بسته (فقط عنوان)</option>
+        <option value="open">باز (همه باز)</option>
+      </select>
+    </div>
+
+    <div class="settings-row">
+      <label>تگ‌ها:</label>
+      <input type="checkbox" id="showTags" onchange="saveDisplaySettings()">
+      <span style="font-size:0.75rem;color:#64748b;">نمایش تگ‌ها</span>
+    </div>
+
+    <div class="settings-row">
+      <label>تاریخ و ساعت:</label>
+      <input type="checkbox" id="showDate" onchange="saveDisplaySettings()">
+      <span style="font-size:0.75rem;color:#64748b;">نمایش تاریخ و ساعت</span>
+    </div>
+
+    <div class="settings-row">
+      <label>گروه‌بندی:</label>
+      <input type="checkbox" id="groupByDate" onchange="saveDisplaySettings()">
+      <span style="font-size:0.75rem;color:#64748b;">گروه‌بندی بر اساس روز</span>
+    </div>
+  </div>
+</div>
+
+<button class="btn btn-sm" style="background:#334155;color:#94a3b8;width:100%;margin-bottom:12px;"
+        onclick="toggleSettings()">
+  ⚙️ تنظیمات
+</button>
+
+<!-- تب‌ها -->
+<div class="tabs">
+  <button class="active" onclick="switchTab('text', this)">✍️ متن</button>
+  <button onclick="switchTab('image', this)">🖼️ تصویر</button>
+  <button onclick="switchTab('link', this)">🔗 لینک</button>
+</div>
+
+<!-- تب متن -->
+<div id="tab-text">
+  <div class="card">
+    <textarea id="textContent" rows="5" placeholder="متن یادداشت..."></textarea>
+    <div class="row">
+      <input type="text" id="textTitle" placeholder="عنوان (اختیاری)">
+    </div>
+    <div class="row">
+      <button class="btn btn-ai" onclick="aiGenerateTitle('text')" id="aiBtnText" style="flex:1;">
+        ✨ عنوان خودکار با AI
+      </button>
+    </div>
+    <div class="row">
+      <button class="btn btn-primary btn-block" onclick="saveTextNote()">
+        💾 ذخیره یادداشت
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- تب تصویر -->
+<div id="tab-image" style="display:none;">
+  <div class="card">
+    <input type="file" id="imageInput" accept="image/*" 
+           style="color:#94a3b8;font-size:0.85rem;margin-bottom:10px;">
+    <img id="imagePreview" class="preview" style="display:none;">
+    
+    <div class="row" style="margin-top:10px;">
+      <input type="text" id="imageTitle" placeholder="عنوان (اختیاری)">
+    </div>
+    
+    <textarea id="imagePrompt" rows="4" 
+              placeholder="توضیحات یا متن یادداشت (اختیاری)..."
+              style="margin-top:8px;"></textarea>
+    
+    <div class="divider">با هوش مصنوعی</div>
+    
+    <div class="row">
+      <button class="btn btn-ai btn-block" onclick="aiAnalyzeImage()" id="aiBtnImage">
+        🔍 تحلیل تصویر با AI
+      </button>
+    </div>
+    <div class="row">
+      <button class="btn btn-outline btn-block" onclick="aiOcrOnly()" id="aiBtnOcr">
+        📄 فقط استخراج متن (OCR)
+      </button>
+    </div>
+    
+    <div class="divider">یا ذخیره دستی</div>
+    
+    <div class="row">
+      <button class="btn btn-primary btn-block" onclick="saveImageNoteManual()">
+        💾 ذخیره عکس
+      </button>
+    </div>
+    
+    <div id="imageResult" style="margin-top:12px;font-size:0.85rem;color:#cbd5e1;line-height:1.7;"></div>
+  </div>
+</div>
+
+<!-- تب لینک -->
+<div id="tab-link" style="display:none;">
+  <div class="card">
+    <input type="text" id="linkUrl" placeholder="https://example.com" dir="ltr">
+    
+    <div class="row" style="margin-top:8px;">
+      <input type="text" id="linkTitle" placeholder="عنوان (اختیاری — از URL ساخته می‌شه)">
+    </div>
+    
+    <textarea id="linkNote" rows="3" 
+              placeholder="توضیحات یا یادداشت شخصی (اختیاری)..."
+              style="margin-top:8px;"></textarea>
+    
+    <div class="divider">با هوش مصنوعی</div>
+    
+    <div class="row">
+      <button class="btn btn-ai btn-block" onclick="fetchAndSummarize()" id="aiBtnLink">
+        🌐 دریافت و خلاصه‌سازی با AI
+      </button>
+    </div>
+    
+    <div class="divider">یا ذخیره دستی</div>
+    
+    <div class="row">
+      <button class="btn btn-primary btn-block" onclick="saveLinkNoteManual()">
+        💾 ذخیره لینک
+      </button>
+    </div>
+    
+    <div id="linkResult" style="margin-top:12px;font-size:0.85rem;color:#cbd5e1;line-height:1.7;"></div>
+  </div>
+</div>
+
+<!-- جستجو -->
+<div class="search-box">
+  <span>🔍</span>
+  <input type="text" id="searchInput" placeholder="جستجو..." oninput="renderNotes()">
+</div>
+
+<div id="notesCount" style="font-size:0.75rem;color:#64748b;margin-bottom:8px;"></div>
+<div id="notesList"></div>
+
+<div class="toast" id="toast"></div>
+
+<!-- مودال تأیید -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <h3 id="modalTitle">⚠️ تأیید</h3>
+    <p id="modalMessage">مطمئنی؟</p>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeModal(false)">انصراف</button>
+      <button class="btn btn-confirm" onclick="closeModal(true)">بله، ذخیره کن</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// 📱 PWA
+// ============================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then((reg) => {
+        console.log('✅ Service Worker ثبت شد:', reg.scope);
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              toast('🔄 نسخه جدید آماده‌ست. برنامه رو ببند و باز کن.');
+            }
+          });
+        });
+      })
+      .catch((err) => console.warn('⚠️ خطا در ثبت Service Worker:', err));
+  });
+}
+
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (localStorage.getItem('pwa_install_dismissed') !== 'true') {
+    setTimeout(() => {
+      const banner = document.getElementById('installBanner');
+      if (banner) banner.style.display = 'flex';
+    }, 3000);
+  }
+});
+
+async function installPWA() {
+  if (!deferredPrompt) {
+    toast('⚠️ از منوی مرورگر «Add to Home Screen» رو انتخاب کن');
+    return;
+  }
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') toast('✅ دفترچه نصب شد!');
+  deferredPrompt = null;
+  document.getElementById('installBanner').style.display = 'none';
+}
+
+function dismissInstall() {
+  document.getElementById('installBanner').style.display = 'none';
+  localStorage.setItem('pwa_install_dismissed', 'true');
+}
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').style.display = 'none';
+  localStorage.setItem('pwa_install_dismissed', 'true');
+  toast('🎉 دفترچه روی صفحه اصلی نصب شد!');
+});
+
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+  document.body.classList.add('standalone-mode');
+}
+
+// ============================================
+// تنظیمات
+// ============================================
+const CONFIG = {
+  serverUrl: localStorage.getItem('serverUrl') || 'http://127.0.0.1:8080',
+  modelName: localStorage.getItem('modelName') || 'qwen',
+  notesKey: 'smart_notes_v1'
+};
+
+const DISPLAY = {
+  showContent: localStorage.getItem('disp_showContent') === 'true',
+  lineLimit: localStorage.getItem('disp_lineLimit') || '3',
+  defaultOpen: localStorage.getItem('disp_defaultOpen') || 'closed',
+  showTags: localStorage.getItem('disp_showTags') !== 'false',
+  showDate: localStorage.getItem('disp_showDate') !== 'false',
+  groupByDate: localStorage.getItem('disp_groupByDate') === 'true',
+  confirmEmpty: localStorage.getItem('disp_confirmEmpty') !== 'false'
+};
+
+const DEFAULTS = {
+  imageText: localStorage.getItem('def_imageText') || 'بدون توضیحات',
+  imageTitle: localStorage.getItem('def_imageTitle') || 'یادداشت تصویری',
+  textTitle: localStorage.getItem('def_textTitle') || 'یادداشت بدون عنوان',
+  linkTitle: localStorage.getItem('def_linkTitle') || 'لینک ذخیره‌شده'
+};
+
+const AUTO_DELETE = {
+  enabled: localStorage.getItem('autoDel_enabled') === 'true',
+  days: parseInt(localStorage.getItem('autoDel_days') || '30', 10),
+  manualOnly: localStorage.getItem('autoDel_manualOnly') === 'true'
+};
+
+let AI_ONLINE = false;
+
+document.getElementById('serverUrl').value = CONFIG.serverUrl;
+document.getElementById('modelName').value = CONFIG.modelName;
+document.getElementById('showContent').checked = DISPLAY.showContent;
+document.getElementById('lineLimit').value = DISPLAY.lineLimit;
+document.getElementById('defaultOpen').value = DISPLAY.defaultOpen;
+document.getElementById('showTags').checked = DISPLAY.showTags;
+document.getElementById('showDate').checked = DISPLAY.showDate;
+document.getElementById('groupByDate').checked = DISPLAY.groupByDate;
+document.getElementById('confirmEmpty').checked = DISPLAY.confirmEmpty;
+document.getElementById('defaultImageText').value = DEFAULTS.imageText;
+document.getElementById('defaultImageTitle').value = DEFAULTS.imageTitle;
+document.getElementById('defaultTextTitle').value = DEFAULTS.textTitle;
+document.getElementById('defaultLinkTitle').value = DEFAULTS.linkTitle;
+document.getElementById('autoDelete').checked = AUTO_DELETE.enabled;
+document.getElementById('keepDays').value = AUTO_DELETE.days;
+document.getElementById('autoDeleteManualOnly').checked = AUTO_DELETE.manualOnly;
+
+function saveServer() {
+  CONFIG.serverUrl = document.getElementById('serverUrl').value.trim().replace(/\/$/, '');
+  localStorage.setItem('serverUrl', CONFIG.serverUrl);
+  toast('✅ آدرس ذخیره شد');
+  checkServer();
+}
+function saveModel() {
+  CONFIG.modelName = document.getElementById('modelName').value.trim();
+  localStorage.setItem('modelName', CONFIG.modelName);
+  toast('✅ نام مدل ذخیره شد');
+}
+
+function saveDisplaySettings() {
+  DISPLAY.showContent = document.getElementById('showContent').checked;
+  DISPLAY.lineLimit = document.getElementById('lineLimit').value;
+  DISPLAY.defaultOpen = document.getElementById('defaultOpen').value;
+  DISPLAY.showTags = document.getElementById('showTags').checked;
+  DISPLAY.showDate = document.getElementById('showDate').checked;
+  DISPLAY.groupByDate = document.getElementById('groupByDate').checked;
+  DISPLAY.confirmEmpty = document.getElementById('confirmEmpty').checked;
+
+  localStorage.setItem('disp_showContent', DISPLAY.showContent);
+  localStorage.setItem('disp_lineLimit', DISPLAY.lineLimit);
+  localStorage.setItem('disp_defaultOpen', DISPLAY.defaultOpen);
+  localStorage.setItem('disp_showTags', DISPLAY.showTags);
+  localStorage.setItem('disp_showDate', DISPLAY.showDate);
+  localStorage.setItem('disp_groupByDate', DISPLAY.groupByDate);
+  localStorage.setItem('disp_confirmEmpty', DISPLAY.confirmEmpty);
+
+  renderNotes();
+  toast('✅ ذخیره شد');
+}
+
+function saveDefaultTexts() {
+  DEFAULTS.imageText = document.getElementById('defaultImageText').value.trim() || 'بدون توضیحات';
+  DEFAULTS.imageTitle = document.getElementById('defaultImageTitle').value.trim() || 'یادداشت تصویری';
+  DEFAULTS.textTitle = document.getElementById('defaultTextTitle').value.trim() || 'یادداشت بدون عنوان';
+  DEFAULTS.linkTitle = document.getElementById('defaultLinkTitle').value.trim() || 'لینک ذخیره‌شده';
+
+  localStorage.setItem('def_imageText', DEFAULTS.imageText);
+  localStorage.setItem('def_imageTitle', DEFAULTS.imageTitle);
+  localStorage.setItem('def_textTitle', DEFAULTS.textTitle);
+  localStorage.setItem('def_linkTitle', DEFAULTS.linkTitle);
+
+  toast('✅ متن‌های پیش‌فرض ذخیره شد');
+}
+
+function saveAutoDelete() {
+  AUTO_DELETE.enabled = document.getElementById('autoDelete').checked;
+  AUTO_DELETE.days = parseInt(document.getElementById('keepDays').value, 10) || 30;
+  AUTO_DELETE.manualOnly = document.getElementById('autoDeleteManualOnly').checked;
+
+  localStorage.setItem('autoDel_enabled', AUTO_DELETE.enabled);
+  localStorage.setItem('autoDel_days', AUTO_DELETE.days);
+  localStorage.setItem('autoDel_manualOnly', AUTO_DELETE.manualOnly);
+
+  toast('✅ تنظیمات حذف خودکار ذخیره شد');
+  runAutoDelete();
+}
+
+function toggleSettings() {
+  const c = document.getElementById('settingsCard');
+  c.style.display = c.style.display === 'none' ? 'block' : 'none';
+}
+
+// ============================================
+// 🗑️ حذف خودکار
+// ============================================
+function runAutoDelete() {
+  if (!AUTO_DELETE.enabled) return;
+  const cutoff = Date.now() - AUTO_DELETE.days * 24 * 60 * 60 * 1000;
+  const notes = loadNotes();
+  const remaining = notes.filter(n => {
+    const age = new Date(n.createdAt).getTime();
+    if (age >= cutoff) return true;
+    if (AUTO_DELETE.manualOnly && n.aiUsed === true) return true;
+    return false;
+  });
+  const deleted = notes.length - remaining.length;
+  if (deleted > 0) {
+    saveNotes(remaining);
+    renderNotes();
+    toast(`🗑️ ${deleted} یادداشت قدیمی حذف شد`);
+  }
+}
+
+// ============================================
+// 📅 تاریخ و ساعت
+// ============================================
+function formatDateTime(iso) {
+  const d = new Date(iso);
+  const dateStr = new Intl.DateTimeFormat('fa-IR', {
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(d);
+  const timeStr = new Intl.DateTimeFormat('fa-IR', {
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).format(d);
+  return { dateStr, timeStr };
+}
+function getDateKey(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getDateLabel(iso) {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  const isSame = (a, b) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  if (isSame(d, today)) return '📅 امروز';
+  if (isSame(d, yesterday)) return '📅 دیروز';
+  return '📅 ' + new Intl.DateTimeFormat('fa-IR', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  }).format(d);
+}
+
+// ============================================
+// 🔌 وضعیت سرور
+// ============================================
+async function checkServer() {
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 3000);
+    const res = await fetch(CONFIG.serverUrl + '/v1/models', { signal: ctrl.signal });
+    clearTimeout(timeout);
+    if (res.ok) {
+      dot.className = 'dot online';
+      txt.textContent = '🟢 هوش مصنوعی متصل';
+      AI_ONLINE = true;
+      updateAIButtons();
+      return true;
+    }
+    throw new Error();
+  } catch {
+    dot.className = 'dot offline';
+    txt.textContent = '🔴 حالت آفلاین — ذخیره دستی فعال';
+    AI_ONLINE = false;
+    updateAIButtons();
+    return false;
+  }
+}
+function updateAIButtons() {
+  ['aiBtnText', 'aiBtnImage', 'aiBtnOcr', 'aiBtnLink'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.disabled = !AI_ONLINE;
+    btn.title = AI_ONLINE ? '' : 'هوش مصنوعی در دسترس نیست';
+  });
+}
+checkServer();
+setInterval(checkServer, 15000);
+
+// ============================================
+// ذخیره‌سازی
+// ============================================
+function loadNotes() {
+  try { return JSON.parse(localStorage.getItem(CONFIG.notesKey)) || []; }
+  catch { return []; }
+}
+function saveNotes(notes) { localStorage.setItem(CONFIG.notesKey, JSON.stringify(notes)); }
+
+function addNote(note) {
+  const notes = loadNotes();
+  const n = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    ...note
+  };
+  notes.unshift(n);
+  saveNotes(notes);
+  renderNotes();
+  return n;
+}
+function deleteNoteById(id) {
+  if (!confirm('این یادداشت حذف بشه؟')) return;
+  saveNotes(loadNotes().filter(n => n.id !== id));
+  renderNotes();
+}
+
+// ============================================
+// 🪟 مودال
+// ============================================
+let modalResolver = null;
+function showConfirm(title, message) {
+  return new Promise(resolve => {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalMessage').textContent = message;
+    document.getElementById('confirmModal').classList.add('show');
+    modalResolver = resolve;
+  });
+}
+function closeModal(result) {
+  document.getElementById('confirmModal').classList.remove('show');
+  if (modalResolver) {
+    modalResolver(result);
+    modalResolver = null;
+  }
+}
+
+// ============================================
+// 🤖 AI
+// ============================================
+async function aiChat(messages, options = {}) {
+  if (!AI_ONLINE) throw new Error('هوش مصنوعی در دسترس نیست');
+  const body = {
+    model: CONFIG.modelName, messages,
+    temperature: options.temperature ?? 0.3,
+    stream: false
+  };
+  const res = await fetch(CONFIG.serverUrl + '/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('خطا در ارتباط با سرور AI');
+  const data = await res.json();
+  return data.choices[0].message.content.trim();
+}
+
+async function aiGenerateTitle(source) {
+  const content = document.getElementById(source === 'text' ? 'textContent' : 'imagePrompt').value;
+  if (!content.trim()) return toast('⚠️ اول متن رو بنویس');
+  const btn = document.getElementById('aiBtnText');
+  btn.disabled = true;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="loading"></span> در حال تولید...';
+  try {
+    const title = await aiChat([
+      { role: 'system', content: 'تو فقط یک عنوان کوتاه (حداکثر ۸ کلمه) برمی‌گردانی.' },
+      { role: 'user', content: 'عنوان:\n\n' + content.slice(0, 2000) }
+    ]);
+    document.getElementById('textTitle').value = title;
+    toast('✨ عنوان ساخته شد');
+  } catch (e) { toast('❌ ' + e.message); }
+  finally { btn.disabled = !AI_ONLINE; btn.innerHTML = orig; }
+}
+
+async function aiAnalyzeImage() {
+  const file = document.getElementById('imageInput').files[0];
+  if (!file) return toast('⚠️ اول تصویر انتخاب کن');
+  const prompt = document.getElementById('imagePrompt').value.trim() || 
+                 'متن موجود در این تصویر را دقیق استخراج کن. اگر متن فارسی است، فارسی بنویس.';
+  const btn = document.getElementById('aiBtnImage');
+  btn.disabled = true;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="loading"></span> در حال تحلیل...';
+  try {
+    const base64 = await fileToBase64(file);
+    const dataUrl = `data:${file.type};base64,${base64}`;
+    const res = await fetch(CONFIG.serverUrl + '/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: CONFIG.modelName,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: dataUrl } }
+          ]
+        }],
+        temperature: 0.1, max_tokens: 1500
+      })
+    });
+    if (!res.ok) throw new Error('خطا در ارتباط با سرور');
+    const data = await res.json();
+    const answer = data.choices[0].message.content.trim();
+    document.getElementById('imageResult').innerHTML =
+      '<strong>📄 نتیجه:</strong><br>' + escapeHtml(answer).replace(/\n/g, '<br>');
+    window._lastImageResult = answer;
+    toast('✅ تحلیل انجام شد');
+  } catch (e) { toast('❌ ' + e.message); }
+  finally { btn.disabled = !AI_ONLINE; btn.innerHTML = orig; }
+}
+
+async function aiOcrOnly() {
+  const file = document.getElementById('imageInput').files[0];
+  if (!file) return toast('⚠️ اول تصویر انتخاب کن');
+  document.getElementById('imagePrompt').value = 'فقط متن موجود در تصویر را بدون هیچ توضیح اضافه، استخراج کن.';
+  await aiAnalyzeImage();
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('imageInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = document.getElementById('imagePreview');
+  img.src = URL.createObjectURL(file);
+  img.style.display = 'block';
+});
+
+// ============================================
+// 🎯 عنوان هوشمند از URL
+// ============================================
+function titleFromUrl(url) {
+  try {
+    const u = new URL(url);
+    let path = u.pathname.replace(/\/$/, '');
+    const parts = path.split('/').filter(Boolean);
+    if (!parts.length) return u.hostname;
+    let last = decodeURIComponent(parts[parts.length - 1]);
+    last = last.replace(/\.(html?|php|aspx?|jsp)$/i, '');
+    last = last.replace(/[-_]+/g, ' ');
+    last = last.replace(/\b\d{4,}\b/g, '').trim();
+    const titled = last.split(' ').filter(Boolean)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+    return titled || u.hostname;
+  } catch {
+    return url;
+  }
+}
+
+// ============================================
+// ✍️ عنوان خودکار از متن
+// ============================================
+function autoTitle(text, maxWords = 8) {
+  if (!text || !text.trim()) return DEFAULTS.textTitle;
+  const clean = text.replace(/\s+/g, ' ').trim();
+  const sentences = clean.split(/[.!?؟\n]+/).map(s => s.trim()).filter(Boolean);
+  for (const s of sentences) {
+    if (s.length > 10) {
+      const words = s.split(' ');
+      return words.slice(0, maxWords).join(' ').slice(0, 80);
+    }
+  }
+  const words = clean.split(' ');
+  return words.slice(0, maxWords).join(' ').slice(0, 80);
+}
+
+// ============================================
+// 💾 ذخیره دستی
+// ============================================
+async function saveTextNote() {
+  const content = document.getElementById('textContent').value.trim();
+  const titleInput = document.getElementById('textTitle').value.trim();
+  if (!content) return toast('⚠️ متن خالی است');
+  const title = titleInput || autoTitle(content);
+  addNote({ title, content, type: 'text', tags: [], aiUsed: false });
+  document.getElementById('textContent').value = '';
+  document.getElementById('textTitle').value = '';
+  toast('💾 ذخیره شد');
+}
+
+async function saveImageNoteManual() {
+  const file = document.getElementById('imageInput').files[0];
+  const textContent = document.getElementById('imagePrompt').value.trim();
+  const titleInput = document.getElementById('imageTitle').value.trim();
+  const aiResult = window._lastImageResult;
+
+  if (!file && !textContent && !aiResult) {
+    return toast('⚠️ حداقل یه عکس یا متن وارد کن');
+  }
+
+  const hasText = textContent || aiResult;
+  if (!hasText && DISPLAY.confirmEmpty) {
+    const ok = await showConfirm(
+      '⚠️ بدون متن ذخیره کنم؟',
+      'هیچ توضیحی برای این عکس وارد نکردی. متن پیش‌فرض «' + DEFAULTS.imageText + '» استفاده می‌شه.'
+    );
+    if (!ok) return;
+  }
+
+  let imageData = null;
+  if (file) {
+    try {
+      const base64 = await fileToBase64(file);
+      imageData = `data:${file.type};base64,${base64}`;
+    } catch (e) {
+      console.warn('خطا در ذخیره تصویر:', e);
+    }
+  }
+
+  const content = aiResult || textContent || DEFAULTS.imageText;
+  const title = titleInput || autoTitle(content) || DEFAULTS.imageTitle;
+
+  addNote({
+    title, content, type: 'image',
+    tags: ['تصویر'], image: imageData, aiUsed: !!aiResult
+  });
+
+  document.getElementById('imagePrompt').value = '';
+  document.getElementById('imageTitle').value = '';
+  document.getElementById('imageResult').innerHTML = '';
+  document.getElementById('imageInput').value = '';
+  document.getElementById('imagePreview').style.display = 'none';
+  window._lastImageResult = null;
+  toast('💾 یادداشت تصویری ذخیره شد');
+}
+
+async function saveLinkNoteManual() {
+  const url = document.getElementById('linkUrl').value.trim();
+  const titleInput = document.getElementById('linkTitle').value.trim();
+  const noteText = document.getElementById('linkNote').value.trim();
+
+  if (!url) return toast('⚠️ لینک رو وارد کن');
+
+  if (!noteText && !titleInput && DISPLAY.confirmEmpty) {
+    const ok = await showConfirm(
+      '⚠️ لینک بدون توضیح؟',
+      'هیچ توضیحی برای این لینک وارد نکردی. عنوان از خود URL ساخته می‌شه.'
+    );
+    if (!ok) return;
+  }
+
+  const autoUrlTitle = titleFromUrl(url);
+  const content = noteText || DEFAULTS.linkTitle;
+  const title = titleInput || autoUrlTitle || DEFAULTS.linkTitle;
+
+  addNote({
+    title,
+    content: noteText ? `${noteText}\n\n🔗 ${url}` : `🔗 ${url}`,
+    type: 'link', tags: ['لینک'], sourceUrl: url, aiUsed: false
+  });
+
+  document.getElementById('linkUrl').value = '';
+  document.getElementById('linkTitle').value = '';
+  document.getElementById('linkNote').value = '';
+  toast('💾 لینک ذخیره شد');
+}
+
+// ============================================
+// 🌐 لینک با AI
+// ============================================
+async function fetchAndSummarize() {
+  const url = document.getElementById('linkUrl').value.trim();
+  if (!url) return toast('⚠️ لینک رو وارد کن');
+  const btn = document.getElementById('aiBtnLink');
+  btn.disabled = true;
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="loading"></span> در حال دریافت...';
+  try {
+    const proxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+    const res = await fetch(proxy);
+    const data = await res.json();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(data.contents, 'text/html');
+    doc.querySelectorAll('script,style,nav,footer,header,aside').forEach(el => el.remove());
+    const pageTitle = doc.querySelector('title')?.textContent?.trim() || titleFromUrl(url);
+    const text = (doc.body?.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 4000);
+
+    document.getElementById('linkResult').innerHTML =
+      '<span class="loading"></span> در حال خلاصه‌سازی...';
+
+    const summary = await aiChat([
+      { role: 'system', content: 'تو یک خلاصه‌ساز حرفه‌ای فارسی هستی.' },
+      { role: 'user', content: `این متن رو در حداکثر ۵ جمله فارسی خلاصه کن:\n\n${text}` }
+    ]);
+
+    const titleInput = document.getElementById('linkTitle').value.trim();
+    const title = titleInput || pageTitle.slice(0, 80);
+    document.getElementById('linkResult').innerHTML =
+      `<strong>📌 ${escapeHtml(title)}</strong><br><br>${escapeHtml(summary).replace(/\n/g, '<br>')}`;
+
+    addNote({
+      title,
+      content: `🔗 ${url}\n\nخلاصه:\n${summary}\n\nمتن اصلی:\n${text.slice(0, 1500)}`,
+      type: 'link', tags: ['لینک'], sourceUrl: url, aiUsed: true
+    });
+    document.getElementById('linkUrl').value = '';
+    document.getElementById('linkTitle').value = '';
+    document.getElementById('linkNote').value = '';
+    toast('✅ لینک ذخیره شد');
+  } catch (e) { toast('❌ ' + e.message); }
+  finally { btn.disabled = !AI_ONLINE; btn.innerHTML = orig; }
+}
+
+// ============================================
+// نمایش یادداشت‌ها
+// ============================================
+const openNotes = new Set();
+
+function renderNotes() {
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+  let notes = loadNotes();
+  if (query) {
+    notes = notes.filter(n =>
+      n.title.toLowerCase().includes(query) ||
+      n.content.toLowerCase().includes(query) ||
+      (n.tags || []).some(t => t.toLowerCase().includes(query))
+    );
+  }
+
+  document.getElementById('notesCount').textContent = `تعداد: ${notes.length}`;
+  const list = document.getElementById('notesList');
+
+  if (!notes.length) {
+    list.innerHTML = `<div class="empty">${query ? 'نتیجه‌ای یافت نشد 🔍' : 'هنوز یادداشتی نداری 📭'}</div>`;
+    return;
+  }
+
+  if (DISPLAY.groupByDate && !query) {
+    const groups = {};
+    notes.forEach(n => {
+      const key = getDateKey(n.createdAt);
+      if (!groups[key]) groups[key] = { label: getDateLabel(n.createdAt), notes: [] };
+      groups[key].notes.push(n);
+    });
+    const sortedKeys = Object.keys(groups).sort().reverse();
+    list.innerHTML = sortedKeys.map(key => `
+      <div class="date-group">${groups[key].label}</div>
+      ${groups[key].notes.map(n => renderNoteCard(n, query)).join('')}
+    `).join('');
+  } else {
+    list.innerHTML = notes.map(n => renderNoteCard(n, query)).join('');
+  }
+}
+
+function getExpiryInfo(createdAt) {
+  if (!AUTO_DELETE.enabled) return null;
+  const created = new Date(createdAt).getTime();
+  const expiry = created + AUTO_DELETE.days * 24 * 60 * 60 * 1000;
+  const remaining = expiry - Date.now();
+  const days = Math.ceil(remaining / (24 * 60 * 60 * 1000));
+  if (remaining < 0) return { expired: true, days: 0 };
+  return { expired: false, days };
+}
+
+function renderNoteCard(n, query) {
+  const { dateStr, timeStr } = formatDateTime(n.createdAt);
+  const isOpen = openNotes.has(n.id) || DISPLAY.defaultOpen === 'open';
+
+  const typeIcon = { text: '📝', image: '🖼️', link: '🔗' }[n.type] || '📝';
+  const typeClass = 'type-' + (n.type || 'text');
+
+  let previewHTML = '';
+  if (DISPLAY.showContent && !isOpen) {
+    const clampClass = DISPLAY.lineLimit === 'full' ? '' : `clamp-${DISPLAY.lineLimit}`;
+    const content = query ? highlight(n.content, query) : escapeHtml(n.content);
+    previewHTML = `<div class="note-preview ${clampClass}">${content}</div>`;
+  }
+
+  const fullContent = query ? highlight(n.content, query) : escapeHtml(n.content);
+  const fullHTML = `<div class="note-full">${fullContent}</div>`;
+
+  const imageHTML = n.image 
+    ? `<img src="${n.image}" class="note-image" alt="تصویر یادداشت">` 
+    : '';
+
+  const tagsHTML = (DISPLAY.showTags && n.tags?.length)
+    ? `<div class="tags">${n.tags.map(t => `<span class="tag">🏷️ ${escapeHtml(t)}</span>`).join('')}</div>`
+    : '';
+
+  const expiry = getExpiryInfo(n.createdAt);
+  let expiryHTML = '';
+  if (expiry) {
+    if (expiry.expired) {
+      expiryHTML = `<span class="expiry-badge expired">⚠️ منقضی</span>`;
+    } else if (expiry.days <= 7) {
+      expiryHTML = `<span class="expiry-badge">⏳ ${expiry.days} روز مانده</span>`;
+    }
+  }
+
+  let metaHTML = '';
+  if (DISPLAY.showDate) {
+    const offlineBadge = n.aiUsed === false 
+      ? `<span class="offline-badge">✋ دستی</span>` 
+      : (n.aiUsed === true ? `<span class="offline-badge" style="background:#4c1d95;color:#ddd6fe;">🤖 AI</span>` : '');
+    
+    metaHTML = `
+      <div class="meta">
+        <span class="date-part">📅 ${dateStr}</span>
+        <span class="time-part">🕐 ${timeStr}</span>
+        ${offlineBadge}
+        ${expiryHTML}
+        ${n.sourceUrl ? `<a href="${n.sourceUrl}" target="_blank" onclick="event.stopPropagation()">🔗 منبع</a>` : ''}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="note ${typeClass} ${isOpen ? 'open' : ''}" data-id="${n.id}">
+      <div class="note-header" onclick="toggleNote(event, '${n.id}')">
+        <div class="note-title">
+          <span class="type-icon">${typeIcon}</span>
+          <span>${query ? highlight(n.title, query) : escapeHtml(n.title)}</span>
+        </div>
+        <div class="note-actions">
+          <span class="expand-icon">▼</span>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteNoteById('${n.id}')">🗑️</button>
+        </div>
+      </div>
+      ${metaHTML}
+      ${imageHTML}
+      ${previewHTML}
+      ${fullHTML}
+      ${tagsHTML}
+    </div>
+  `;
+}
+
+function toggleNote(event, id) {
+  if (event.target.closest('button') || event.target.closest('a')) return;
+  const card = document.querySelector(`.note[data-id="${id}"]`);
+  if (!card) return;
+  if (card.classList.contains('open')) {
+    card.classList.remove('open');
+    openNotes.delete(id);
+  } else {
+    card.classList.add('open');
+    openNotes.add(id);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function highlight(text, query) {
+  const safe = escapeHtml(text);
+  const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return safe.replace(re, '<mark>$1</mark>');
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['text', 'image', 'link'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+  });
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+runAutoDelete();
+renderNotes();
+</script>
+</body>
+</html>
